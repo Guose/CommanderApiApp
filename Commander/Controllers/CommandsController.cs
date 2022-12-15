@@ -4,6 +4,7 @@ using Commander.Dtos;
 using Commander.Models;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -25,22 +26,27 @@ namespace Commander.Controllers
 
         // GET http://localhost:5000/api/commmands
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CommandReadDto>>> GetCommandsListAsync() 
+        public async Task<ActionResult<List<CommandReadDto>>> GetCommandsListAsync() 
         {
-            var commandItems = _repository.GetAllCommands((bool)(_isAscending = true));
+            IEnumerable<Command> commandItems = _repository.GetAllCommands((bool)(_isAscending = true));
 
-            return await Task.Run(() => _mapper.Map<ActionResult<IEnumerable<CommandReadDto>>>(commandItems));
+            if (commandItems != null)
+            {
+                return await Task.Run(() => _mapper.Map<List<CommandReadDto>>(commandItems));                
+            }
+
+            return NotFound();
         }
 
         // GET http://localhost:5000/api/commmands/{id}
         [HttpGet("{id}")]
-        public async Task <ActionResult<CommandReadDto>> GetCommandAsync(int id)
+        public async Task<ActionResult<CommandReadDto>> GetCommandAsync(int id)
         {
             var commandItem = _repository.GetCommandById(id);
 
             if (commandItem != null)
             {
-                return await Task.Run(() => _mapper.Map<ActionResult<CommandReadDto>>(commandItem));                
+                return await Task.Run(() => _mapper.Map<CommandReadDto>(commandItem));
             }
 
             return NotFound();
