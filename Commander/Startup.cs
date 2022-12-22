@@ -34,7 +34,7 @@ namespace Commander
             services.AddScoped<ICommanderRepo, CommanderRepo>();
 
             services.AddLinqToDBContext<CommanderDataConnection>((provider, options) =>
-            {
+           {
                 options.UsePostgreSQL(Configuration.GetConnectionString("PostgreSqlConnection")).UseDefaultLogging(provider);
             });            
 

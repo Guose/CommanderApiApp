@@ -28,7 +28,7 @@ namespace Commander.Controllers
         [HttpGet]
         public async Task<ActionResult<List<CommandReadDto>>> GetCommandsListAsync() 
         {
-            IEnumerable<Command> commandItems = _repository.GetAllCommands((bool)(_isAscending = true));
+            var commandItems = await _repository.GetAllCommandsAsync((bool)(_isAscending = true));
 
             if (commandItems != null)
             {
@@ -39,10 +39,10 @@ namespace Commander.Controllers
         }
 
         // GET http://localhost:5000/api/commmands/{id}
-        [HttpGet("{id}")]
+        [HttpGet("{id}", Name = "GetCommandAsync")]
         public async Task<ActionResult<CommandReadDto>> GetCommandAsync(int id)
         {
-            var commandItem = _repository.GetCommandById(id);
+            var commandItem = await _repository.GetCommandByIdAsync(id);
 
             if (commandItem != null)
             {
@@ -56,27 +56,27 @@ namespace Commander.Controllers
         [HttpPost]
         public async Task<ActionResult<CommandReadDto>> CreateNewCommandAsync(CommandCreateDto commandCreateDto)
         {
-            var commandModel = await Task.Run(() => _mapper.Map<Command>(commandCreateDto));
-            await Task.Run(() => _repository.CreateNewCommand(commandModel));
+            var commandModel = _mapper.Map<Command>(commandCreateDto);
+            var commandModelId = await _repository.CreateNewCommandAsync(commandModel);
 
-            var commandReadDto =  await Task.Run(() => _mapper.Map<CommandReadDto>(commandModel));
+            var commandReadDto = _mapper.Map<CommandReadDto>(commandModelId);
 
-            return await Task.Run(() => CreatedAtRoute(nameof(GetCommandAsync), new { commandReadDto.Id }, commandReadDto));
+            return CreatedAtRoute(nameof(GetCommandAsync), new { id = commandReadDto.Id }, commandReadDto);
         }
 
         // PUT http://localhost:5000/api/commmands/{id}
         [HttpPut("{id}")]
         public async Task<ActionResult> UpdateCommandAsync(int id, CommandUpdateDto commandUpdateDto)
         {
-            var commandModelFromRepo = await Task.Run(() => _repository.GetCommandById(id));
+            var commandModelFromRepo = await _repository.GetCommandByIdAsync(id);
 
             if (commandModelFromRepo == null)
             {
                 return NotFound();
             }
 
-            await Task.Run(() => _mapper.Map(commandUpdateDto, commandModelFromRepo));
-            await Task.Run(() => _repository.UpdateCommand(commandModelFromRepo));
+            _mapper.Map(commandUpdateDto, commandModelFromRepo);
+            await _repository.UpdateCommandAsync(commandModelFromRepo);
 
             return NoContent();
         }
@@ -85,14 +85,14 @@ namespace Commander.Controllers
         [HttpPatch("{id}")]
         public async Task<ActionResult> UpdateCommandPartialAsync(int id, JsonPatchDocument<CommandUpdateDto> jsonPatch)
         {
-            var commandFromRepo = await Task.Run(() => _repository.GetCommandById(id));
+            var commandFromRepo = await _repository.GetCommandByIdAsync(id);
 
             if (commandFromRepo == null)
             {
                 return NotFound();
             }
 
-            var commandToPatch = await Task.Run(() => _mapper.Map<CommandUpdateDto>(commandFromRepo));
+            var commandToPatch = _mapper.Map<CommandUpdateDto>(commandFromRepo);
             jsonPatch.ApplyTo(commandToPatch, ModelState);
 
             if (!TryValidateModel(commandToPatch))
@@ -100,8 +100,8 @@ namespace Commander.Controllers
                 return ValidationProblem(ModelState);
             }
 
-            await Task.Run(() => _mapper.Map(commandToPatch, commandFromRepo));
-            await Task.Run(() => _repository.UpdateCommand(commandFromRepo));
+            _mapper.Map(commandToPatch, commandFromRepo);
+            await _repository.UpdateCommandAsync(commandFromRepo);
 
             return NoContent();
         }
@@ -110,14 +110,14 @@ namespace Commander.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteCommandAsync(int id)
         {
-            var commandModelFromRepo = await Task.Run(() => _repository.GetCommandById(id));
+            var commandModelFromRepo = await _repository.GetCommandByIdAsync(id);
 
             if (commandModelFromRepo == null)
             {
                 return NotFound();
             }
 
-            await Task.Run(() => _repository.DeleteCommand(commandModelFromRepo));
+            await _repository.DeleteCommandAsync(commandModelFromRepo);
 
             return NoContent();
         }

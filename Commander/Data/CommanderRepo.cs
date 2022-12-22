@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using LinqToDB;
 using System;
+using System.Threading.Tasks;
 
 namespace Commander.Data
 {
@@ -15,38 +16,45 @@ namespace Commander.Data
             _dataConnection = dataConnection;
         }
 
-        public void CreateNewCommand(Command cmd)
+        public async Task<Command> CreateNewCommandAsync(Command cmd)
         {
-            _dataConnection.Insert(cmd ?? throw new NullReferenceException());
+            await _dataConnection.InsertWithIdentityAsync(cmd ?? throw new NullReferenceException());
+
+            var commandWithNewId = await _dataConnection
+                                             .GetTable<Command>()
+                                             .OrderByDescending(x => x.Id)
+                                             .FirstOrDefaultAsync();
+            return commandWithNewId;
         }
 
-        public void DeleteCommand(Command cmd)
+        public async Task DeleteCommandAsync(Command cmd)
         {
-            _dataConnection.Delete(cmd ?? throw new NullReferenceException());
+            await _dataConnection.DeleteAsync(cmd ?? throw new NullReferenceException());
         }
 
-        public IEnumerable<Command> GetAllCommands(bool ascending)
+        public async Task<IEnumerable<Command>> GetAllCommandsAsync(bool ascending)
         {
-            var rows = from c in _dataConnection.Commands
-                       select c;
+            var rows = _dataConnection.GetTable<Command>();
+                
             if (ascending)
-                return rows.ToList().OrderBy(c => c.Id);
+                return await rows.OrderBy(c => c.Id).ToListAsync();
             else
-                return rows.ToList().OrderByDescending(c => c.Id);
+                return await rows.OrderByDescending(c => c.Id).ToListAsync();
         }
 
-        public Command GetCommandById(int id)
+        public async Task<Command> GetCommandByIdAsync(int id)
         {
-            var command = from c in _dataConnection.Commands 
-                          where c.Id == id 
-                          select c;
+            var command = await _dataConnection
+                                        .GetTable<Command>()
+                                        .Where(c => c.Id == id)
+                                        .FirstOrDefaultAsync();
 
-            return command.FirstOrDefault();
+            return command;
         }
 
-        public void UpdateCommand(Command cmd)
+        public async Task UpdateCommandAsync(Command cmd)
         {
-            _dataConnection.Update(cmd);
+            await _dataConnection.UpdateAsync(cmd);
         }
     }
 }
